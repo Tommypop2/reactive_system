@@ -18,4 +18,4 @@ createEffect(() => {
 	<div>{tripled()}</div>
 </>;
 
-// setInterval(() => setSignal(signal() + 1), 1000);
+setInterval(() => setSignal(signal() + 1), 1000);
