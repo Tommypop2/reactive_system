@@ -60,6 +60,12 @@ export default function coolPlugin(): PluginOption {
 										if (types.isJSXOpeningElement(path.node.openingElement)) {
 											path.node.openingElement.attributes.forEach((attr) => {
 												if (types.isJSXAttribute(attr)) {
+													// @ts-ignore
+													if (attr.value.expression === undefined) {
+														createElementArgs[attr.name.name.toString()] =
+															attr.value;
+														return;
+													}
 													createElementArgs[attr.name.name.toString()] =
 														// @ts-ignore
 														attr.value.expression;

@@ -1,10 +1,7 @@
-import { createMemo, createSignal, createEffect } from "../../reactive_system";
+import { createMemo, createSignal } from "../../reactive_system";
 const [signal, setSignal] = createSignal(0);
 const doubled = createMemo(() => signal() * 2);
 const tripled = createMemo(() => signal() * 3);
-createEffect(() => {
-	console.log(doubled());
-});
 
 <>
 	<button
@@ -17,5 +14,5 @@ createEffect(() => {
 	<div>{doubled()}</div>
 	<div>{tripled()}</div>
 </>;
-
-setInterval(() => setSignal(signal() + 1), 1000);
+// This has to be done dynamically as, otherwise, imports are hoisted, and everything would appear out of order
+import("./other_component");
