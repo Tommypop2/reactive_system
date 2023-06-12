@@ -19,6 +19,18 @@ public:
         this->computation_ptr = computation_ptr;
         this->update();
     }
+    ~Memo()
+    {
+        // Remove the pointer to this instance from all subscribers and dependencies
+        for (auto dep : this->dependencies)
+        {
+            dep->subscribers.erase(this);
+        }
+        for (auto sub : this->subscribers)
+        {
+            sub->dependencies.erase(this);
+        }
+    }
     update()
     {
         void *prevMemo = current_memo;
