@@ -11,8 +11,6 @@ public:
     std::set<Memo *> subscribers;
     std::set<Memo *> dependencies;
     std::function<T()> computation_ptr = NULL;
-    bool dirty = false;
-    int depsDirtyCount = 0;
     Memo(std::function<T()> computation_ptr)
     {
         this->computation_ptr = computation_ptr;
@@ -30,11 +28,17 @@ public:
             sub->dependencies.erase(this);
         }
     }
+    /**
+     * Gets the value of the memo
+     */
     get()
     {
         this->track();
         return this->value;
     }
+    /**
+     * Sets the value of the memo, and updates all subscribers
+     */
     set(int newValue)
     {
         if (this->value == newValue)
@@ -47,6 +51,8 @@ public:
     }
 
 private:
+    bool dirty = false;
+    int depsDirtyCount = 0;
     update()
     {
         void *prevMemo = current_memo;
@@ -103,6 +109,9 @@ private:
         }
         return 0;
     }
+    /**
+     * Notify all subscribers that something has changed, and update them
+     */
     notifySubscribers()
     {
         for (auto sub : this->subscribers)
@@ -117,10 +126,39 @@ private:
         return 0;
     }
 };
+/// @brief Get the owner of the current computation
+/// @return A pointer to the memo which owns the current computation
+template <typename T>
+Memo<T> *getOwner()
+{
+    return (Memo<T> *)current_memo;
+}
+/**
+ * Run a computation with a specific owner
+ */
+template <typename T>
+Memo<T> *runWithOwner(void *ownerPtr, std::function<T()> fn)
+{
+    void *prevMemo = current_memo;
+    current_memo = ownerPtr;
+    T result = fn();
+    current_memo = prevMemo;
+    return result;
+}
+/**
+ * Untrack a computation
+ */
+template <typename T>
+T untrack(std::function<T()> computation_ptr)
+{
+    // Untracking is the same as just running with no owner
+    return runWithOwner(NULL, computation_ptr);
+}
 int main()
 {
-    Memo<int> *A = new Memo<int>([]()
-                                 { return 0; });
+    Memo<int> *owner = NULL;
+    Memo<int> *A = new Memo<int>([&owner]()
+                                 { owner = getOwner<int>();return 0; });
     Memo<int> *B = new Memo<int>([&A]()
                                  { std::cout << "B updating" << std::endl;return A->get() + 1; });
     Memo<int> *C = new Memo<int>([&A]()
@@ -128,11 +166,12 @@ int main()
     Memo<int> *D = new Memo<int>([&B, &C]()
                                  { return B->get() + C->get(); });
     Memo<int> *E = new Memo<int>([&D]()
-                                 { return D->get() + 5; });
+                                 { std::cout << "E updating" << std::endl;return D->get() + 5; });
     std::cout << E->get() << std::endl;
     A->set(2);
     std::cout << E->get() << std::endl;
-    A->set(3);
+    // This is functionally the same as A->set(3)
+    owner->set(3);
     std::cout << E->get() << std::endl;
     return 0;
 }
