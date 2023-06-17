@@ -147,7 +147,7 @@ export function createContext<T>(context: T): Context<T> {
 }
 export function useListenerContext(listener = getListener()) {
 	if (listener == null) {
-		return;
+		return null;
 	}
 	return listener.context.context;
 }
