@@ -142,7 +142,7 @@ export function createContext<T>(context: T): Context<T> {
 		// return;
 		throw Error("Cannot create context outside of a computation");
 	}
-	listener.context = { id: "123", context };
+	listener.context = { id: Symbol("context"), context };
 	return listener.context;
 }
 export function useListenerContext(listener = getListener()) {
@@ -152,4 +152,16 @@ export function useListenerContext(listener = getListener()) {
 	return listener.context.context;
 }
 
-export function useContext() {}
+export function useContext<T>(context: Context<T>) {
+	const id = context.id;
+	let listener = getListener();
+	while (true) {
+		if (listener === null) {
+			throw Error("Cannot use context outside of a computation");
+		}
+		if (listener.context !== null && listener?.context.id === id) {
+			return listener.context.context as T;
+		}
+		listener = listener.owner;
+	}
+}

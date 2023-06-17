@@ -5,6 +5,7 @@ import {
 	createMemo,
 	createSignal,
 	getListener,
+	useContext,
 	useListenerContext,
 } from "../../src";
 describe("createContext", () => {
@@ -22,6 +23,22 @@ describe("useListenerContext", () => {
 		createMemo(() => {
 			createContext(context);
 			expect(useListenerContext()).toBe(context);
+		});
+	});
+});
+describe("useContext", () => {
+	test("useContext returns the value of the current context", () => {
+		createMemo(() => {
+			const context = createContext({ value: 123 });
+			expect(context.context).toBe(useContext(context));
+		});
+	});
+	test("useContext returns the value of the parent context", () => {
+		createMemo(() => {
+			const context = createContext({ value: 123 });
+			createEffect(() => {
+				expect(context.context).toBe(useContext(context));
+			});
 		});
 	});
 });
