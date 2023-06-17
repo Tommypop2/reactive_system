@@ -130,3 +130,26 @@ export const createProfiledMemo = <T>(
 	});
 	return memo;
 };
+
+// Context
+type Context<T> = {
+	id: string;
+	context: T;
+};
+export function createContext<T>(context: T): Context<T> {
+	const listener = getListener();
+	if (listener == null) {
+		// return;
+		throw Error("Cannot create context outside of a computation");
+	}
+	listener.context = { id: "123", context };
+	return listener.context;
+}
+export function useListenerContext(listener = getListener()) {
+	if (listener == null) {
+		return;
+	}
+	return listener.context.context;
+}
+
+export function useContext() {}

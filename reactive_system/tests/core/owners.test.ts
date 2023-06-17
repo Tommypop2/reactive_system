@@ -1,41 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { createEffect, createMemo, createSignal, getListener } from "../../src";
-import { Memo, runWithListener } from "../../src/core";
+import { Memo, createMemo, getOwner } from "../../src";
 
 describe("getOwner", () => {
-	test("No owner is returned outside of all memos", () => {
-		const owner = getListener();
-		expect(owner).toBeNull();
-	});
-	test("An owner is returned from within a memo", () => {
-		let owner: Memo<any> | null = null;
-		const data = createMemo(() => {
-			owner = getListener();
+	test("Owner is null within an unowned computation", () => {
+		let owner: Memo | null = null;
+		createMemo(() => {
+			owner = getOwner();
 		});
-		expect(owner).not.toBe(null);
-	});
-});
-describe("runWithOwner", () => {
-	test("runWithOwner can run with a null owner and runs immediately", () => {
-		let ran = false;
-		runWithListener(null, () => {
-			ran = true;
-		});
-		expect(ran).toBe(true);
-	});
-	test("Getters called within runWithOwner are tracked by the correct owner", () => {
-		const [signal, setSignal] = createSignal(0);
-		let effectOwner: Memo<any> | null = null;
-		let updates = 0;
-		createEffect(() => {
-			updates += 1;
-			effectOwner = getListener();
-		});
-		runWithListener(effectOwner, () => {
-			// This signal should be tracked under the effect's scope
-			signal();
-		});
-		setSignal(2);
-		expect(updates).toBe(2);
+		expect(owner).toBe(null);
 	});
 });

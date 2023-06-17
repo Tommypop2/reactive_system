@@ -12,6 +12,8 @@ export class Memo<T = any> {
 	public depsDirtyCount = 0;
 	public dirty = false;
 	private equals: Equals;
+	// Any computation can be a context provider
+	public context: any = null;
 	// The owner of the created computation
 	public owner = currentMemo;
 	constructor(fn: () => T, options?: Options) {
