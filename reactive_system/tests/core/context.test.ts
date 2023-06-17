@@ -42,7 +42,7 @@ describe("useContext", () => {
 		});
 	});
 });
-describe("Context", () => {
+describe("Context behaviours", () => {
 	test("Context can be reactive", () => {
 		const [val, setVal] = createSignal(0);
 		let effectRuns = 0;
