@@ -1,5 +1,5 @@
-import { Memo, getOwner, runWithOwner } from "../core";
-export { getOwner, runWithOwner, getRoot } from "../core";
+import { Memo, getListener, getOwner, runWithListener } from "../core";
+export { getOwner, runWithListener, getRoot, getListener } from "../core";
 export type { Memo } from "../core";
 type Getter<T> = () => T;
 type Setter<T> = (v: T) => void;
@@ -35,7 +35,7 @@ export const createEffect = <T>(fn: () => T) => {
  * @returns
  */
 export const untrack = <T>(fn: () => T) => {
-	return runWithOwner(null, fn);
+	return runWithListener(null, fn);
 };
 type OnOptions = { defer?: boolean };
 
@@ -93,8 +93,8 @@ export const createCacheableMemo = <T>(
 			return cache[depString];
 		}
 		const value = fn();
-		const owner = getOwner();
-		dependencies = owner?.dependencies!;
+		const listener = getListener();
+		dependencies = listener?.dependencies!;
 		cache[getDepsString(dependencies)] = value;
 		return value;
 	});
@@ -120,9 +120,9 @@ export const createProfiledMemo = <T>(
 		const endTime = performance.now();
 		if (endTime - startTime >= minCacheTimeMs) {
 			caching = true;
-			const owner = getOwner();
-			if (owner?.dependencies) {
-				cachedDependencies = owner.dependencies;
+			const listener = getListener();
+			if (listener?.dependencies) {
+				cachedDependencies = listener.dependencies;
 			}
 			cache[getDepsString(cachedDependencies)] = res;
 		}

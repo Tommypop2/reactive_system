@@ -76,27 +76,30 @@ export class Memo<T = any> {
 		this.subscribers.forEach((sub) => sub.decrement());
 	};
 }
-
+export function getListener() {
+	return currentMemo;
+}
+/**
+ * Runs the desired computation with the specified listener
+ * @param owner The desired listener of the computation
+ * @param fn The function to be run
+ * @returns Result of the given function
+ */
+export function runWithListener<T>(listener: Memo | null, fn: () => T) {
+	let prev = currentMemo;
+	currentMemo = listener;
+	const result = fn();
+	currentMemo = prev;
+	return result;
+}
 /**
  * Gets the memo which owns the current computation
  * @returns The memo which owns the currently running computation
  */
 export function getOwner() {
-	return currentMemo;
+	return getListener()?.owner ?? null;
 }
-/**
- * Runs the desired computation with the specified owner
- * @param owner The desired owner of the computation
- * @param fn The function to be run
- * @returns Result of the given function
- */
-export function runWithOwner<T>(owner: Memo | null, fn: () => T) {
-	let prev = currentMemo;
-	currentMemo = owner;
-	const result = fn();
-	currentMemo = prev;
-	return result;
-}
+
 /**
  * Gets the root owner of the current computation
  * @param owner The computation's owner

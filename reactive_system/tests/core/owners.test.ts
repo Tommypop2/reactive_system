@@ -1,16 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { createEffect, createMemo, createSignal, getOwner } from "../../src";
-import { Memo, runWithOwner } from "../../src/core";
+import { createEffect, createMemo, createSignal, getListener } from "../../src";
+import { Memo, runWithListener } from "../../src/core";
 
 describe("getOwner", () => {
 	test("No owner is returned outside of all memos", () => {
-		const owner = getOwner();
+		const owner = getListener();
 		expect(owner).toBeNull();
 	});
 	test("An owner is returned from within a memo", () => {
 		let owner: Memo<any> | null = null;
 		const data = createMemo(() => {
-			owner = getOwner();
+			owner = getListener();
 		});
 		expect(owner).not.toBe(null);
 	});
@@ -18,7 +18,7 @@ describe("getOwner", () => {
 describe("runWithOwner", () => {
 	test("runWithOwner can run with a null owner and runs immediately", () => {
 		let ran = false;
-		runWithOwner(null, () => {
+		runWithListener(null, () => {
 			ran = true;
 		});
 		expect(ran).toBe(true);
@@ -29,9 +29,9 @@ describe("runWithOwner", () => {
 		let updates = 0;
 		createEffect(() => {
 			updates += 1;
-			effectOwner = getOwner();
+			effectOwner = getListener();
 		});
-		runWithOwner(effectOwner, () => {
+		runWithListener(effectOwner, () => {
 			// This signal should be tracked under the effect's scope
 			signal();
 		});
