@@ -1,4 +1,4 @@
-import { Memo, getListener, getOwner, runWithListener } from "../core";
+import { Memo, getListener, runWithListener } from "../core";
 export { getOwner, runWithListener, getRoot, getListener } from "../core";
 export type { Memo } from "../core";
 type Getter<T> = () => T;

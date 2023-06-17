@@ -99,7 +99,22 @@ export function runWithListener<T>(listener: Memo | null, fn: () => T) {
 export function getOwner() {
 	return getListener()?.owner ?? null;
 }
-
+/**
+ * Runs a function with the specified owner.
+ * This only works in a scope with a listener.
+ * @param owner The desired owner
+ * @param fn
+ * @returns The result of the given function
+ */
+export function runWithOwner<T>(owner: Memo, fn: () => T) {
+	const listener = getListener();
+	if (listener === null) return;
+	const prev = listener.owner;
+	listener.owner = owner;
+	const result = fn();
+	listener.owner = prev;
+	return result;
+}
 /**
  * Gets the root owner of the current computation
  * @param owner The computation's owner
