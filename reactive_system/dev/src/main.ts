@@ -1,4 +1,9 @@
-import { createEffect, createSignal, createProfiledMemo } from "../../src";
+import {
+	createEffect,
+	createSignal,
+	createProfiledMemo,
+	createMemo,
+} from "../../src";
 
 const body = document.body;
 function wait(ms: number) {
@@ -7,7 +12,7 @@ function wait(ms: number) {
 }
 const [count, setCount] = createSignal(0);
 const doubled = createProfiledMemo(() => {
-	wait(50);
+	// wait(50);
 	console.log("Doubled recomputed");
 	return count() * 2;
 });
@@ -28,7 +33,14 @@ const doubledDisplay = document.createElement("p");
 createEffect(() => {
 	display.textContent = count().toString();
 	doubledDisplay.textContent = doubled().toString();
+	console.log("Effect running");
+	const memo = createMemo(() => "yes");
 });
+let condition = true;
+setInterval(() => {
+	if (!condition) return;
+	setCount(count() + 1);
+}, 0);
 body.append(inc);
 body.append(display);
 body.append(doubledDisplay);

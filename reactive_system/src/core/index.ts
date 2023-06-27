@@ -3,24 +3,46 @@ type Setter<T = unknown> = (v: T) => void;
 type Equals = (val1: any, val2: any) => boolean;
 type Options = { equals?: Equals };
 let currentMemo: Memo | null = null;
+const POOL_MAX_LENGTH = 0;
+const pool: Memo[] = [];
 export class Memo<T = any> {
-	public fn: () => T;
+	public fn!: () => T;
 	public dependencies: Set<Memo> = new Set();
 	public subscribers: Set<Memo> = new Set();
-	public cache: Record<string, string> = {};
 	public value: any;
 	public depsDirtyCount = 0;
 	public dirty = false;
-	private equals: Equals;
+	private equals!: Equals;
 	// Any computation can be a context provider
 	public context: any = null;
 	// The owner of the created computation
 	public owner = currentMemo;
+	// ALl of the computations that this computation owns
+	public children: Set<Memo> = new Set();
+	public cleanups: Set<() => any> = new Set();
 	constructor(fn: () => T, options?: Options) {
-		this.equals = options?.equals ?? ((v1: any, v2: any) => v1 === v2);
-		this.fn = fn;
-		this.update();
-		return this;
+		let obj: Memo =
+			pool.length > 0
+				? (() => {
+						console.log("Reusing from pool");
+						return pool.pop()!.reset();
+				  })()
+				: this;
+		obj.equals = options?.equals ?? ((v1: any, v2: any) => v1 === v2);
+		obj.fn = fn;
+		if (currentMemo) currentMemo?.children.add(obj);
+
+		obj.update();
+		return obj;
+	}
+	cleanup() {
+		this.subscribers.forEach((sub) => sub.cleanup());
+		this.dependencies.forEach((dep) => dep.subscribers.delete(this));
+		// Run user-specified cleanups
+		this.runCleanups();
+		// Add to pool
+		if (pool.length >= POOL_MAX_LENGTH) return;
+		pool.push(this);
 	}
 	update() {
 		let prev = currentMemo;
@@ -52,6 +74,17 @@ export class Memo<T = any> {
 		this.value = newVal;
 		this.notifySubscribers();
 	};
+	reset() {
+		this.dependencies.clear();
+		this.subscribers.clear();
+		this.context = null;
+		this.depsDirtyCount = 0;
+		this.dirty = false;
+		this.value = undefined;
+		this.owner = currentMemo;
+		this.cleanups.clear();
+		return this;
+	}
 	private increment() {
 		this.depsDirtyCount++;
 		if (this.depsDirtyCount === 1) {
@@ -63,6 +96,9 @@ export class Memo<T = any> {
 		this.depsDirtyCount--;
 		if (this.depsDirtyCount === 0) {
 			if (this.dirty) {
+				// Clean up from last computation
+				this.children.forEach((child) => child.cleanup());
+				this.runCleanups();
 				// We can now recompute
 				this.update();
 			}
@@ -77,6 +113,10 @@ export class Memo<T = any> {
 		});
 		this.subscribers.forEach((sub) => sub.decrement());
 	};
+	private runCleanups() {
+		this.cleanups.forEach((cleanup) => cleanup());
+		this.cleanups.clear();
+	}
 }
 export function getListener() {
 	return currentMemo;

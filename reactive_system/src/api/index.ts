@@ -165,3 +165,21 @@ export function useContext<T>(context: Context<T>) {
 		listener = listener.owner;
 	}
 }
+
+// Life cycle methods
+/**
+ * Runs the given function as an effect without tracking any dependencies
+ * @param fn
+ */
+export const onMount = <T>(fn: () => T) => {
+	createEffect(() => untrack(fn));
+};
+
+/**
+ * Runs the given function when the listener is cleaned up
+ * @param fn
+ */
+export const onCleanup = <T>(fn: () => T) => {
+	const listener = getListener();
+	listener?.cleanups.add(fn);
+};
