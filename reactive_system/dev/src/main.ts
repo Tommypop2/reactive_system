@@ -11,11 +11,6 @@ function wait(ms: number) {
 	while (Date.now() - now <= ms) {}
 }
 const [count, setCount] = createSignal(0);
-const doubled = createProfiledMemo(() => {
-	// wait(50);
-	console.log("Doubled recomputed");
-	return count() * 2;
-});
 const inc = document.createElement("button");
 inc.textContent = "Increment";
 inc.addEventListener("click", () => {
@@ -31,16 +26,25 @@ dec.addEventListener("click", () => {
 const display = document.createElement("p");
 const doubledDisplay = document.createElement("p");
 createEffect(() => {
-	display.textContent = count().toString();
-	doubledDisplay.textContent = doubled().toString();
-	console.log("Effect running");
+	// display.textContent = count().toString();
+	// doubledDisplay.textContent = doubled().toString();
+	count();
+	// console.log("Effect running");
 	const memo = createMemo(() => "yes");
+	const memo2 = createMemo(() => "yes");
+	const memo3 = createMemo(() => "yes");
+	const memo4 = createMemo(() => "yes");
 });
-let condition = true;
-setInterval(() => {
-	if (!condition) return;
-	setCount(count() + 1);
-}, 0);
+const start = performance.now();
+while (true) {
+	const x = count();
+	if (x === 10000) {
+		break;
+	}
+	setCount(x + 1);
+}
+const end = performance.now();
+console.log(end - start);
 body.append(inc);
 body.append(display);
 body.append(doubledDisplay);

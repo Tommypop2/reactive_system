@@ -3,12 +3,12 @@ type Setter<T = unknown> = (v: T) => void;
 type Equals = (val1: any, val2: any) => boolean;
 type Options = { equals?: Equals };
 let currentMemo: Memo | null = null;
-const POOL_MAX_LENGTH = 0;
+let POOL_MAX_LENGTH = 10;
 const pool: Memo[] = [];
 export class Memo<T = any> {
 	public fn!: () => T;
-	public dependencies: Set<Memo> = new Set();
-	public subscribers: Set<Memo> = new Set();
+	public dependencies: Set<Memo> | null = null;
+	public subscribers: Set<Memo> | null = null;
 	public value: any;
 	public depsDirtyCount = 0;
 	public dirty = false;
@@ -18,26 +18,27 @@ export class Memo<T = any> {
 	// The owner of the created computation
 	public owner = currentMemo;
 	// ALl of the computations that this computation owns
-	public children: Set<Memo> = new Set();
-	public cleanups: Set<() => any> = new Set();
+	public children: Set<Memo> | null = null;
+	public cleanups: Set<() => any> | null = null;
 	constructor(fn: () => T, options?: Options) {
 		let obj: Memo =
 			pool.length > 0
 				? (() => {
-						console.log("Reusing from pool");
 						return pool.pop()!.reset();
 				  })()
 				: this;
 		obj.equals = options?.equals ?? ((v1: any, v2: any) => v1 === v2);
 		obj.fn = fn;
-		if (currentMemo) currentMemo?.children.add(obj);
-
+		if (currentMemo) {
+			if (currentMemo.children === null) currentMemo.children = new Set();
+			currentMemo?.children.add(obj);
+		}
 		obj.update();
 		return obj;
 	}
 	cleanup() {
-		this.subscribers.forEach((sub) => sub.cleanup());
-		this.dependencies.forEach((dep) => dep.subscribers.delete(this));
+		this.subscribers?.forEach((sub) => sub.cleanup());
+		this.dependencies?.forEach((dep) => dep.subscribers?.delete(this));
 		// Run user-specified cleanups
 		this.runCleanups();
 		// Add to pool
@@ -54,13 +55,15 @@ export class Memo<T = any> {
 		}
 		this.value = newValue;
 		// Mark children as dirty
-		this.subscribers.forEach((sub) => (sub.dirty = true));
+		this.subscribers?.forEach((sub) => (sub.dirty = true));
 
 		// Node has been updated so is no longer dirty
 		this.dirty = false;
 	}
 	track() {
 		if (!currentMemo) return;
+		if (this.subscribers === null) this.subscribers = new Set();
+		if (currentMemo.dependencies === null) currentMemo.dependencies = new Set();
 		this.subscribers.add(currentMemo);
 		currentMemo.dependencies.add(this);
 	}
@@ -75,21 +78,21 @@ export class Memo<T = any> {
 		this.notifySubscribers();
 	};
 	reset() {
-		this.dependencies.clear();
-		this.subscribers.clear();
+		this.dependencies?.clear();
+		this.subscribers?.clear();
 		this.context = null;
 		this.depsDirtyCount = 0;
 		this.dirty = false;
 		this.value = undefined;
 		this.owner = currentMemo;
-		this.cleanups.clear();
+		this.cleanups?.clear();
 		return this;
 	}
 	private increment() {
 		this.depsDirtyCount++;
 		if (this.depsDirtyCount === 1) {
 			// This node has just updated, so it needs to notify all of its children to update
-			this.subscribers.forEach((sub) => sub.increment());
+			this.subscribers?.forEach((sub) => sub.increment());
 		}
 	}
 	private decrement() {
@@ -97,25 +100,25 @@ export class Memo<T = any> {
 		if (this.depsDirtyCount === 0) {
 			if (this.dirty) {
 				// Clean up from last computation
-				this.children.forEach((child) => child.cleanup());
+				this.children?.forEach((child) => child.cleanup());
 				this.runCleanups();
 				// We can now recompute
 				this.update();
 			}
 			// Re-evaluate children
-			this.subscribers.forEach((sub) => sub.decrement());
+			this.subscribers?.forEach((sub) => sub.decrement());
 		}
 	}
 	private notifySubscribers = () => {
-		this.subscribers.forEach((sub) => {
+		this.subscribers?.forEach((sub) => {
 			sub.dirty = true;
 			sub.increment();
 		});
-		this.subscribers.forEach((sub) => sub.decrement());
+		this.subscribers?.forEach((sub) => sub.decrement());
 	};
 	private runCleanups() {
-		this.cleanups.forEach((cleanup) => cleanup());
-		this.cleanups.clear();
+		this.cleanups?.forEach((cleanup) => cleanup());
+		this.cleanups?.clear();
 	}
 }
 export function getListener() {
@@ -173,4 +176,18 @@ export function getRoot(): Memo | null {
 		}
 		owner = owner.owner;
 	}
+}
+/**
+ * Gets the maximum length of the object pool
+ * @returns
+ */
+export function getMaxPoolLen() {
+	return POOL_MAX_LENGTH;
+}
+/**
+ * Sets the maximum length of the object pool
+ * @param n
+ */
+export function setPoolMaxLen(n: number) {
+	POOL_MAX_LENGTH = n;
 }

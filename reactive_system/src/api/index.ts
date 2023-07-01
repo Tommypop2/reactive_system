@@ -181,5 +181,7 @@ export const onMount = <T>(fn: () => T) => {
  */
 export const onCleanup = <T>(fn: () => T) => {
 	const listener = getListener();
-	listener?.cleanups.add(fn);
+	if (!listener) return;
+	if (!listener.cleanups) listener.cleanups = new Set();
+	listener.cleanups.add(fn);
 };
